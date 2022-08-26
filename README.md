@@ -1,9 +1,6 @@
-# ⚠ Archived repository
-
-I have not used Sendgrid since more than one year. I don't have any ways to test modifications to the provider.
-
+<!-- markdownlint-disable first-line-h1 no-inline-html -->
 <a href="https://terraform.io">
-    <img src="https://raw.githubusercontent.com/hashicorp/terraform-website/d841a1e5fca574416b5ca24306f85a0f4f41b36d/content/source/assets/images/logo-terraform-main.svg" alt="Terraform logo" title="Terraform" align="right" height="50" />
+    <img src=".github/terraform_logo.svg" alt="Terraform logo" title="Terraform" align="right" height="50" />
 </a>
 
 # Terraform Provider for [Sendgrid](https://sendgrid.com)
@@ -11,24 +8,28 @@ I have not used Sendgrid since more than one year. I don't have any ways to test
 To compile the provider, run `make build`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
 
 ```sh
-$ make build
+make build
 ```
 
 In order to test the provider, you can simply run `make test`.
 
 ```sh
-$ make test
+make test
 ```
 
 In order to run the full suite of Acceptance tests, run `make testacc`.
 
 ```sh
-$ make testacc
+make testacc
 ```
+
+## Fork
+
+This repository is an updated fork of [Trois-Six/terraform-provider-sendgrid](https://github.com/Trois-Six/terraform-provider-sendgrid>).
 
 ## [Documentation](docs/index.md)
 
-The documentation is created thank's to a fork of https://github.com/terraform-providers/terraform-provider-baiducloud/tree/master/gendocs.
+The documentation is created thank's to a fork of [gendocs](https://github.com/terraform-providers/terraform-provider-baiducloud/tree/master/gendocs).
 
 ## [Terraform Registry](https://registry.terraform.io/providers/Trois-Six/sendgrid)
 

@@ -25,7 +25,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	sendgrid "github.com/trois-six/terraform-provider-sendgrid/sdk"
+	sendgrid "github.com/taharah/terraform-provider-sendgrid/sdk"
 )
 
 func resourceSendgridAPIKey() *schema.Resource {
@@ -82,10 +82,6 @@ func resourceSendgridAPIKeyCreate(ctx context.Context, d *schema.ResourceData, m
 		scopes = append(scopes, scope.(string))
 	}
 
-	if ok := scopeInScopes(scopes, "sender_verification_eligible"); !ok {
-		scopes = append(scopes, "sender_verification_eligible")
-	}
-
 	apiKeyStruct, err := sendgrid.RetryOnRateLimit(ctx, d, func() (interface{}, sendgrid.RequestError) {
 		return c.CreateAPIKey(name, scopes)
 	})
@@ -114,17 +110,9 @@ func resourceSendgridAPIKeyRead(_ context.Context, d *schema.ResourceData, m int
 	//nolint:errcheck
 	d.Set("name", apiKey.Name)
 	//nolint:errcheck
-	d.Set("scopes", apiKey.Scopes)
+	d.Set("scopes", remove(apiKey.Scopes, "2fa_required"))
 
 	return nil
-}
-
-func hasDiff(o, n interface{}) bool {
-	if eq, ok := o.(schema.Equal); ok {
-		return !eq.Equal(n)
-	}
-
-	return !reflect.DeepEqual(o, n)
 }
 
 func resourceSendgridAPIKeyUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -136,8 +124,6 @@ func resourceSendgridAPIKeyUpdate(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	o, n := d.GetChange("scopes")
-	n.(*schema.Set).Add("sender_verification_eligible")
-	n.(*schema.Set).Add("2fa_required")
 
 	if ok := hasDiff(o, n); ok {
 		var scopes []string
@@ -169,4 +155,21 @@ func resourceSendgridAPIKeyDelete(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	return nil
+}
+
+func hasDiff(o, n interface{}) bool {
+	if eq, ok := o.(schema.Equal); ok {
+		return !eq.Equal(n)
+	}
+
+	return !reflect.DeepEqual(o, n)
+}
+
+func remove(s []string, r string) []string {
+	for i, v := range s {
+		if v == r {
+			return append(s[:i], s[i+1:]...)
+		}
+	}
+	return s
 }
