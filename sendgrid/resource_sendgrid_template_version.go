@@ -32,7 +32,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	sendgrid "github.com/trois-six/terraform-provider-sendgrid/sdk"
+	sendgrid "github.com/taharah/terraform-provider-sendgrid/sdk"
 )
 
 // ImportSplitParts is the expected length of

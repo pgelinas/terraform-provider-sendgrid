@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/trois-six/terraform-provider-sendgrid/sendgrid"
+	"github.com/taharah/terraform-provider-sendgrid/sendgrid"
 )
 
 var testAccProviders map[string]*schema.Provider
