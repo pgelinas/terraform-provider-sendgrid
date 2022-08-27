@@ -3,6 +3,7 @@ package sendgrid
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 )
 
 // TemplateVersion is a Sendgrid transactional template version.
@@ -97,9 +98,15 @@ func (c *Client) DeleteTemplateVersion(templateID, id string) (bool, error) {
 		return false, ErrTemplateVersionIDRequired
 	}
 
-	if _, statusCode, err := c.Get("DELETE", "/templates/"+templateID+"/versions/"+id); statusCode > 299 ||
-		err != nil {
+	_, statusCode, err := c.Get("DELETE", "/templates/"+templateID+"/versions/"+id)
+	if err != nil {
 		return false, fmt.Errorf("failed deleting template version: %w", err)
+	}
+	if statusCode != http.StatusNoContent && statusCode != http.StatusNotFound {
+		return false, &RequestError{
+			StatusCode: statusCode,
+			Err:        fmt.Errorf("failed deleting template version: %d", statusCode),
+		}
 	}
 
 	return true, nil

@@ -20,7 +20,7 @@ package sendgrid
 
 import (
 	"context"
-	"reflect"
+	"log"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -50,7 +50,12 @@ func resourceSendgridAPIKey() *schema.Resource {
 				Description: "The individual permissions that you are giving to this API Key.",
 				Optional:    true,
 				Computed:    true,
-				Elem:        &schema.Schema{Type: schema.TypeString},
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+					DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+						return scopeInScopes([]string{"2fa_required", "sender_verification_eligible", "sender_verification_legacy"}, old)
+					},
+				},
 			},
 			"api_key": {
 				Type:        schema.TypeString,
@@ -62,38 +67,38 @@ func resourceSendgridAPIKey() *schema.Resource {
 	}
 }
 
-func scopeInScopes(scopes []string, scope string) bool {
-	for _, v := range scopes {
-		if v == scope {
-			return true
-		}
-	}
-
-	return false
-}
-
 func resourceSendgridAPIKeyCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	var scopes []string
-
 	c := m.(*sendgrid.Client)
-	name := d.Get("name").(string)
+	req := &sendgrid.APIKey{}
 
-	for _, scope := range d.Get("scopes").(*schema.Set).List() {
-		scopes = append(scopes, scope.(string))
+	if v, ok := d.GetOk("name"); ok {
+		req.Name = v.(string)
+		log.Printf("[DEBUG] create api_key name: %v", req.Name)
 	}
 
+	if v, ok := d.GetOk("scopes"); ok {
+		var scopes []string
+		vl := v.(*schema.Set).List()
+
+		for _, l := range vl {
+			scopes = append(scopes, l.(string))
+		}
+
+		req.Scopes = scopes
+		log.Printf("[DEBUG] create api_key scopes: %v", req.Scopes)
+	}
+
+	log.Printf("[DEBUG] creating API Key: %s", req.Name)
 	apiKeyStruct, err := sendgrid.RetryOnRateLimit(ctx, d, func() (interface{}, sendgrid.RequestError) {
-		return c.CreateAPIKey(name, scopes)
+		return c.CreateAPIKey(req)
 	})
-
-	apiKey := apiKeyStruct.(*sendgrid.APIKey)
-
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	log.Printf("[DEBUG] created API Key: %s", req.Name)
 
+	apiKey := apiKeyStruct.(*sendgrid.APIKey)
 	d.SetId(apiKey.ID)
-	//nolint:errcheck
 	d.Set("api_key", apiKey.APIKey)
 
 	return resourceSendgridAPIKeyRead(ctx, d, m)
@@ -107,39 +112,40 @@ func resourceSendgridAPIKeyRead(_ context.Context, d *schema.ResourceData, m int
 		return diag.FromErr(err.Err)
 	}
 
-	//nolint:errcheck
 	d.Set("name", apiKey.Name)
-	//nolint:errcheck
-	d.Set("scopes", remove(apiKey.Scopes, "2fa_required"))
-
+	d.Set("scopes", apiKey.Scopes)
 	return nil
 }
 
 func resourceSendgridAPIKeyUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(*sendgrid.Client)
+	req := &sendgrid.APIKey{}
 
-	a := sendgrid.APIKey{
-		ID:   d.Id(),
-		Name: d.Get("name").(string),
+	if d.HasChange("name") {
+		req.Name = d.Get("name").(string)
+		log.Printf("[DEBUG] update api_key name: %v", req.Name)
 	}
 
-	o, n := d.GetChange("scopes")
-
-	if ok := hasDiff(o, n); ok {
+	if d.HasChange("scopes") {
 		var scopes []string
-		for _, scope := range d.Get("scopes").(*schema.Set).List() {
-			scopes = append(scopes, scope.(string))
+		vl := d.Get("scopes").(*schema.Set).List()
+
+		for _, l := range vl {
+			scopes = append(scopes, l.(string))
 		}
 
-		a.Scopes = scopes
+		req.Scopes = scopes
+		log.Printf("[DEBUG] update api_key scopes: %v", req.Scopes)
 	}
 
+	log.Printf("[DEBUG] updating API Key: %s", req.Name)
 	_, err := sendgrid.RetryOnRateLimit(ctx, d, func() (interface{}, sendgrid.RequestError) {
-		return c.UpdateAPIKey(d.Id(), a.Name, a.Scopes)
+		return c.UpdateAPIKey(d.Id(), req)
 	})
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	log.Printf("[DEBUG] updated API Key: %s", req.Name)
 
 	return resourceSendgridAPIKeyRead(ctx, d, m)
 }
@@ -147,29 +153,18 @@ func resourceSendgridAPIKeyUpdate(ctx context.Context, d *schema.ResourceData, m
 func resourceSendgridAPIKeyDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(*sendgrid.Client)
 
-	_, err := sendgrid.RetryOnRateLimit(ctx, d, func() (interface{}, sendgrid.RequestError) {
-		return c.DeleteAPIKey(d.Id())
-	})
-	if err != nil {
+	if _, err := c.DeleteAPIKey(d.Id()); err != nil {
 		return diag.FromErr(err)
 	}
 
 	return nil
 }
 
-func hasDiff(o, n interface{}) bool {
-	if eq, ok := o.(schema.Equal); ok {
-		return !eq.Equal(n)
-	}
-
-	return !reflect.DeepEqual(o, n)
-}
-
-func remove(s []string, r string) []string {
-	for i, v := range s {
-		if v == r {
-			return append(s[:i], s[i+1:]...)
+func scopeInScopes(scopes []string, scope string) bool {
+	for _, v := range scopes {
+		if v == scope {
+			return true
 		}
 	}
-	return s
+	return false
 }

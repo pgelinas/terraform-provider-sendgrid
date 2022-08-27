@@ -42,11 +42,12 @@ func resourceSendgridTemplate() *schema.Resource {
 				ValidateFunc: validation.StringLenBetween(1, maxStringLength),
 			},
 			"generation": {
-				Type:        schema.TypeString,
-				Description: "Defines the generation of the template, allowed values: legacy, dynamic (default).",
-				Optional:    true,
-				Default:     "dynamic",
-				ForceNew:    true,
+				Type:         schema.TypeString,
+				Description:  "Defines the generation of the template, allowed values: legacy, dynamic (default).",
+				Optional:     true,
+				Default:      "dynamic",
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"dynamic", "legacy"}, false),
 			},
 			"updated_at": {
 				Type:        schema.TypeString,
@@ -68,9 +69,8 @@ func resourceSendgridTemplateCreate(_ context.Context, d *schema.ResourceData, m
 		return diag.FromErr(err)
 	}
 
-	//nolint:errcheck
-	d.Set("updated_at", template.UpdatedAt)
 	d.SetId(template.ID)
+	d.Set("updated_at", template.UpdatedAt)
 
 	return nil
 }
@@ -86,7 +86,6 @@ func resourceSendgridTemplateRead(_ context.Context, d *schema.ResourceData, m i
 	if err = sendgridTemplateParse(template, d); err != nil {
 		return diag.FromErr(err)
 	}
-
 	return nil
 }
 
@@ -102,7 +101,6 @@ func sendgridTemplateParse(template *sendgrid.Template, d *schema.ResourceData) 
 	if err := d.Set("updated_at", template.UpdatedAt); err != nil {
 		return ErrSetTemplateUpdatedAt
 	}
-
 	return nil
 }
 
@@ -122,10 +120,8 @@ func resourceSendgridTemplateUpdate(ctx context.Context, d *schema.ResourceData,
 func resourceSendgridTemplateDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(*sendgrid.Client)
 
-	_, err := c.DeleteTemplate(d.Id())
-	if err != nil {
+	if _, err := c.DeleteTemplate(d.Id()); err != nil {
 		return diag.FromErr(err)
 	}
-
 	return nil
 }

@@ -24,7 +24,7 @@ func TestAccSendgridSubuserBasic(t *testing.T) {
 			{
 				Config: testAccCheckSendgridSubuserConfigBasic(username, password, email, ips),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSendgridSubuserExists("sendgrid_subuser.new"),
+					testAccCheckSendgridSubuserExists("sendgrid_subuser.this"),
 				),
 			},
 		},
@@ -52,13 +52,12 @@ func testAccCheckSendgridSubuserDestroy(s *terraform.State) error {
 
 func testAccCheckSendgridSubuserConfigBasic(username, password, email string, ips []string) string {
 	return fmt.Sprintf(`
-	resource "sendgrid_subuser" "subuser" {
-		username = %s
-		password = %s
-		email    = %s
-		ips      = %s
-	}
-	`, username, password, email, ips)
+resource "sendgrid_subuser" "this" {
+  username = %q
+  password = %q
+  email    = %q
+  ips      = %s
+}`, username, password, email, formatResourceList(ips))
 }
 
 func testAccCheckSendgridSubuserExists(n string) resource.TestCheckFunc {
