@@ -70,7 +70,9 @@ func resourceSendgridTemplateVersion() *schema.Resource { //nolint:funlen
 				Description: "Set the version as the active version associated with the template. " +
 					"Only one version of a template can be active. " +
 					"The first version created for a template will automatically be set to Active. Allowed values: 0, 1.",
-				Optional: true,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.IntBetween(0, 1),
 			},
 			"name": {
 				Type:        schema.TypeString,
@@ -117,7 +119,7 @@ func resourceSendgridTemplateVersion() *schema.Resource { //nolint:funlen
 	}
 }
 
-func resourceSendgridTemplateVersionCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceSendgridTemplateVersionCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(*sendgrid.Client)
 
 	templateVersion, err := c.CreateTemplateVersion(sendgrid.TemplateVersion{
@@ -134,11 +136,10 @@ func resourceSendgridTemplateVersionCreate(_ context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	//nolint:errcheck
-	d.Set("updated_at", templateVersion.UpdatedAt)
 	d.SetId(templateVersion.ID)
+	d.Set("updated_at", templateVersion.UpdatedAt)
 
-	return nil
+	return resourceSendgridTemplateVersionRead(ctx, d, m)
 }
 
 func resourceSendgridTemplateVersionRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

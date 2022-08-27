@@ -27,7 +27,7 @@ func TestAccSendgridTemplateVersionBasic(t *testing.T) {
 					subject,
 				),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSendgridTemplateVersionExists("sendgrid_template_version.new"),
+					testAccCheckSendgridTemplateVersionExists("sendgrid_template_version.this"),
 				),
 			},
 		},
@@ -45,8 +45,7 @@ func testAccCheckSendgridTemplateVersionDestroy(s *terraform.State) error {
 		templateID := rs.Primary.Attributes["template_id"]
 		id := rs.Primary.ID
 
-		_, err := c.DeleteTemplateVersion(templateID, id)
-		if err != nil {
+		if _, err := c.DeleteTemplateVersion(templateID, id); err != nil {
 			return err
 		}
 	}
@@ -58,16 +57,14 @@ func testAccCheckSendgridTemplateVersionConfigBasic(
 	templateName, templateVersionName, subject string,
 ) string {
 	return fmt.Sprintf(`
-	resource "sendgrid_template" "template" {
-		name = %s
-		generation = "dynamic"
-	}
-	resource "sendgrid_template_version" "template_version" {
-		template_id = sendgrid.template.template.id
-		name = %s
-		subject = %s
-	}
-	`, templateName, templateVersionName, subject)
+resource "sendgrid_template" "this" {
+  name = %q
+}
+resource "sendgrid_template_version" "this" {
+  template_id = sendgrid_template.this.id
+  name = %q
+  subject = %q
+}`, templateName, templateVersionName, subject)
 }
 
 func testAccCheckSendgridTemplateVersionExists(n string) resource.TestCheckFunc {

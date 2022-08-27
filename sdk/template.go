@@ -3,6 +3,7 @@ package sendgrid
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 )
 
 // Template is a Sendgrid transactional template.
@@ -10,7 +11,7 @@ type Template struct {
 	ID         string            `json:"id,omitempty"`
 	Name       string            `json:"name,omitempty"`
 	Generation string            `json:"generation,omitempty"`
-	UpdatedAt  string            `json:"updated_at,omitempty"` //nolint:tagliatelle
+	UpdatedAt  string            `json:"updated_at,omitempty"`
 	Versions   []TemplateVersion `json:"versions,omitempty"`
 	Warnings   []string          `json:"warnings,omitempty"`
 }
@@ -22,11 +23,9 @@ type Templates struct {
 func parseTemplate(respBody string) (*Template, error) {
 	var body Template
 
-	err := json.Unmarshal([]byte(respBody), &body)
-	if err != nil {
+	if err := json.Unmarshal([]byte(respBody), &body); err != nil {
 		return nil, fmt.Errorf("failed parsing template: %w", err)
 	}
-
 	return &body, nil
 }
 
@@ -51,12 +50,18 @@ func (c *Client) CreateTemplate(name, generation string) (*Template, error) {
 		generation = "dynamic"
 	}
 
-	respBody, _, err := c.Post("POST", "/templates", Template{
+	respBody, statusCode, err := c.Post(http.MethodPost, "/templates", &Template{
 		Name:       name,
 		Generation: generation,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed creating template: %w", err)
+	}
+	if statusCode != http.StatusCreated {
+		return nil, &RequestError{
+			StatusCode: statusCode,
+			Err:        fmt.Errorf("%w, status: %d, response: %s", ErrFailedCreatingTemplate, statusCode, respBody),
+		}
 	}
 
 	return parseTemplate(respBody)
@@ -68,9 +73,15 @@ func (c *Client) ReadTemplate(id string) (*Template, error) {
 		return nil, ErrTemplateIDRequired
 	}
 
-	respBody, _, err := c.Get("GET", "/templates/"+id)
+	respBody, statusCode, err := c.Get(http.MethodGet, "/templates/"+id)
 	if err != nil {
 		return nil, fmt.Errorf("failed reading template: %w", err)
+	}
+	if statusCode != http.StatusOK {
+		return nil, &RequestError{
+			StatusCode: statusCode,
+			Err:        fmt.Errorf("%w, status: %d, response: %s", ErrFailedGettingTemplate, statusCode, respBody),
+		}
 	}
 
 	return parseTemplate(respBody)
@@ -96,26 +107,42 @@ func (c *Client) UpdateTemplate(id, name string) (*Template, error) {
 		return nil, ErrTemplateNameRequired
 	}
 
-	respBody, _, err := c.Post("PATCH", "/templates/"+id, Template{
+	respBody, statusCode, err := c.Post("PATCH", "/templates/"+id, &Template{
 		Name: name,
-	},
-	)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed updating template: %w", err)
+	}
+	if statusCode != http.StatusOK {
+		return nil, &RequestError{
+			StatusCode: statusCode,
+			Err:        fmt.Errorf("%w, status: %d, response: %s", ErrFailedUpdatingTemplate, statusCode, respBody),
+		}
 	}
 
 	return parseTemplate(respBody)
 }
 
 // DeleteTemplate deletes a transactional template.
-func (c *Client) DeleteTemplate(id string) (bool, error) {
+func (c *Client) DeleteTemplate(id string) (bool, *RequestError) {
 	if id == "" {
-		return false, ErrTemplateIDRequired
+		return false, &RequestError{
+			Err: ErrTemplateIDRequired,
+		}
 	}
 
-	if _, statusCode, err := c.Get("DELETE", "/templates/"+id); statusCode > 299 || err != nil {
-		return false, fmt.Errorf("failed deleting template: %w", err)
+	_, statusCode, err := c.Get(http.MethodDelete, "/templates/"+id)
+	if err != nil {
+		return false, &RequestError{
+			StatusCode: statusCode,
+			Err:        fmt.Errorf("failed deleting template: %w", err),
+		}
 	}
-
+	if statusCode != http.StatusNoContent && statusCode != http.StatusNotFound {
+		return false, &RequestError{
+			StatusCode: statusCode,
+			Err:        fmt.Errorf("failed deleting template: %d", statusCode),
+		}
+	}
 	return true, nil
 }

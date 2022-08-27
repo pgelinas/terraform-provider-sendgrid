@@ -1,6 +1,7 @@
 package sendgrid_test
 
 import (
+	"encoding/json"
 	"os"
 	"testing"
 
@@ -35,4 +36,9 @@ func testAccPreCheck(t *testing.T) {
 	if err := os.Getenv("SENDGRID_API_KEY"); err == "" {
 		t.Fatal("SENDGRID_API_KEY must be set for acceptance tests")
 	}
+}
+
+func formatResourceList(list []string) string {
+	b, _ := json.Marshal(list)
+	return string(b)
 }

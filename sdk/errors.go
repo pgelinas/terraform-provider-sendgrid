@@ -45,6 +45,15 @@ var (
 	// ErrFailedDeletingSubUser error displayed when the provider can not delete a subuser.
 	ErrFailedDeletingSubUser = errors.New("failed deleting subUser")
 
+	// ErrFailedCreatingTemplate
+	ErrFailedCreatingTemplate = errors.New("failed creating template")
+
+	// ErrFailedGettingTemplate
+	ErrFailedGettingTemplate = errors.New("failed getting template")
+
+	// ErrFailedUpdatingTemplate
+	ErrFailedUpdatingTemplate = errors.New("failed updating template")
+
 	// ErrTemplateIDRequired error displayed when a template ID wasn't specified.
 	ErrTemplateIDRequired = errors.New("a template ID is required")
 
@@ -114,6 +123,10 @@ var (
 type RequestError struct {
 	StatusCode int
 	Err        error
+}
+
+func (err *RequestError) Error() string {
+	return err.Err.Error()
 }
 
 type subUserError struct {
