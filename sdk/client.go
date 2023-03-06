@@ -82,7 +82,7 @@ func (c *Client) Post(method rest.Method, endpoint string, body interface{}) (st
 		return "", 0, fmt.Errorf("failed preparing request body: %w", err)
 	}
 
-	resp, err := sendgrid.API(req)
+	resp, err := sendgrid.MakeRequest(req)
 	if err != nil {
 		return "", resp.StatusCode, fmt.Errorf("failed posting resource: %w", err)
 	}
