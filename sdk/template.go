@@ -8,10 +8,10 @@ import (
 
 // Template is a Sendgrid transactional template.
 type Template struct {
-	ID         string            `json:"id,omitempty"`
-	Name       string            `json:"name,omitempty"`
-	Generation string            `json:"generation,omitempty"`
-	UpdatedAt  string            `json:"updated_at,omitempty"`
+	ID         string            `json:"id"`
+	Name       string            `json:"name"`
+	Generation string            `json:"generation"`
+	UpdatedAt  string            `json:"updated_at"`
 	Versions   []TemplateVersion `json:"versions,omitempty"`
 	Warnings   []string          `json:"warnings,omitempty"`
 }
