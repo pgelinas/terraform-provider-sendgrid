@@ -8,10 +8,10 @@ import (
 
 // Template is a Sendgrid transactional template.
 type Template struct {
-	ID         string            `json:"id"`
-	Name       string            `json:"name"`
-	Generation string            `json:"generation"`
-	UpdatedAt  string            `json:"updated_at"`
+	ID         string            `json:"id,omitempty"`
+	Name       string            `json:"name,omitempty"`
+	Generation string            `json:"generation,omitempty"`
+	UpdatedAt  string            `json:"updated_at,omitempty"`
 	Versions   []TemplateVersion `json:"versions,omitempty"`
 	Warnings   []string          `json:"warnings,omitempty"`
 }
@@ -25,6 +25,9 @@ func parseTemplate(respBody string) (*Template, error) {
 
 	if err := json.Unmarshal([]byte(respBody), &body); err != nil {
 		return nil, fmt.Errorf("failed parsing template: %w", err)
+	}
+	if body.ID == "" {
+		return nil, fmt.Errorf("response is missing ID. %s", respBody)
 	}
 	return &body, nil
 }
