@@ -50,9 +50,13 @@ func (c *Client) CreateTemplateVersion(t TemplateVersion) (*TemplateVersion, err
 		return nil, ErrTemplateVersionSubjectRequired
 	}
 
-	respBody, _, err := c.Post("POST", "/templates/"+t.TemplateID+"/versions", t)
+	respBody, statusCode, err := c.Post("POST", "/templates/"+t.TemplateID+"/versions", t)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating template version: %w", err)
+	}
+
+	if statusCode >= 500 {
+		return nil, fmt.Errorf("failed creating the template version. Status: %d, Body: %s", statusCode, respBody)
 	}
 
 	return parseTemplateVersion(respBody)
