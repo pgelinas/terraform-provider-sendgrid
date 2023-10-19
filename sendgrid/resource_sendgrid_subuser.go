@@ -2,14 +2,16 @@
 Provide a resource to manage a subuser.
 Example Usage
 ```hcl
-resource "sendgrid_subuser" "subuser" {
-	username = "my-subuser"
-	email    = "subuser@example.org"
-	password = "Passw0rd!"
-	ips      = [
-		"127.0.0.1"
-	]
-}
+
+	resource "sendgrid_subuser" "subuser" {
+		username = "my-subuser"
+		email    = "subuser@example.org"
+		password = "Passw0rd!"
+		ips      = [
+			"127.0.0.1"
+		]
+	}
+
 ```
 Import
 A subuser can be imported, e.g.
@@ -100,7 +102,7 @@ func resourceSendgridSubuserCreate(ctx context.Context, d *schema.ResourceData, 
 	}
 
 	_, err := sendgrid.RetryOnRateLimit(ctx, d, func() (interface{}, sendgrid.RequestError) {
-		return c.CreateSubuser(username, email, password, ips)
+		return c.CreateSubuser(ctx, username, email, password, ips)
 	})
 	if err != nil {
 		return diag.FromErr(err)
@@ -115,14 +117,14 @@ func resourceSendgridSubuserCreate(ctx context.Context, d *schema.ResourceData, 
 	return resourceSendgridSubuserRead(ctx, d, m)
 }
 
-func resourceSendgridSubuserRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceSendgridSubuserRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(*sendgrid.Client)
 
 	// hack to clear any on behalf of set in create sub user
 	// to fix this properly I think we need to pass this down rather than setting global state
 	c.OnBehalfOf = ""
 
-	subUser, requestErr := c.ReadSubUser(d.Id())
+	subUser, requestErr := c.ReadSubUser(ctx, d.Id())
 	if requestErr.Err != nil {
 		return diag.FromErr(requestErr.Err)
 	}
@@ -145,7 +147,7 @@ func resourceSendgridSubuserUpdate(ctx context.Context, d *schema.ResourceData, 
 	c := m.(*sendgrid.Client)
 
 	if d.HasChange("disabled") {
-		if _, requestErr := c.UpdateSubuser(d.Id(), d.Get("disabled").(bool)); requestErr.Err != nil {
+		if _, requestErr := c.UpdateSubuser(ctx, d.Id(), d.Get("disabled").(bool)); requestErr.Err != nil {
 			return diag.FromErr(requestErr.Err)
 		}
 	}
@@ -158,7 +160,7 @@ func resourceSendgridSubuserUpdate(ctx context.Context, d *schema.ResourceData, 
 			ips = append(ips, ip.(string))
 		}
 
-		if requestErr := c.UpdateSubuserIPs(d.Id(), ips); requestErr.Err != nil {
+		if requestErr := c.UpdateSubuserIPs(ctx, d.Id(), ips); requestErr.Err != nil {
 			return diag.FromErr(requestErr.Err)
 		}
 	}
@@ -168,9 +170,11 @@ func resourceSendgridSubuserUpdate(ctx context.Context, d *schema.ResourceData, 
 		username := d.Get("username").(string)
 
 		if requestErr := c.UpdateSubuserPassword(
+			ctx,
 			username,
 			oldPassword.(string),
-			newPassword.(string)); requestErr.Err != nil {
+			newPassword.(string),
+		); requestErr.Err != nil {
 			return diag.FromErr(requestErr.Err)
 		}
 	}
@@ -182,7 +186,7 @@ func resourceSendgridSubuserDelete(ctx context.Context, d *schema.ResourceData, 
 	c := m.(*sendgrid.Client)
 
 	_, err := sendgrid.RetryOnRateLimit(ctx, d, func() (interface{}, sendgrid.RequestError) {
-		return c.DeleteSubuser(d.Id())
+		return c.DeleteSubuser(ctx, d.Id())
 	})
 	if err != nil {
 		return diag.FromErr(err)

@@ -1,9 +1,10 @@
 package sendgrid
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/sendgrid/rest"
 	"github.com/sendgrid/sendgrid-go"
 )
@@ -42,7 +43,7 @@ func bodyToJSON(body interface{}) ([]byte, error) {
 }
 
 // Get gets a resource from Sendgrid.
-func (c *Client) Get(method rest.Method, endpoint string) (string, int, error) {
+func (c *Client) Get(ctx context.Context, method rest.Method, endpoint string) (string, int, error) {
 	var req rest.Request
 	if c.OnBehalfOf != "" {
 		req = sendgrid.GetRequestSubuser(c.apiKey, endpoint, c.host, c.OnBehalfOf)
@@ -52,7 +53,13 @@ func (c *Client) Get(method rest.Method, endpoint string) (string, int, error) {
 
 	req.Method = method
 
-	resp, err := sendgrid.API(req)
+	tflog.Debug(ctx, "sending request to sendgrid", map[string]interface{}{
+		"request": req,
+	})
+	resp, err := sendgrid.MakeRequestWithContext(ctx, req)
+	tflog.Debug(ctx, "response from sendgrid", map[string]interface{}{
+		"response": resp,
+	})
 	if err != nil {
 		return "", resp.StatusCode, fmt.Errorf("failed getting resource: %w", err)
 	}
@@ -61,7 +68,7 @@ func (c *Client) Get(method rest.Method, endpoint string) (string, int, error) {
 }
 
 // Post posts a resource to Sendgrid.
-func (c *Client) Post(method rest.Method, endpoint string, body interface{}) (string, int, error) {
+func (c *Client) Post(ctx context.Context, method rest.Method, endpoint string, body interface{}) (string, int, error) {
 	var err error
 
 	var req rest.Request
@@ -82,7 +89,13 @@ func (c *Client) Post(method rest.Method, endpoint string, body interface{}) (st
 		return "", 0, fmt.Errorf("failed preparing request body: %w", err)
 	}
 
-	resp, err := sendgrid.MakeRequest(req)
+	tflog.Debug(ctx, "sending request to sendgrid", map[string]interface{}{
+		"request": req,
+	})
+	resp, err := sendgrid.MakeRequestWithContext(ctx, req)
+	tflog.Debug(ctx, "response from sendgrid", map[string]interface{}{
+		"response": resp,
+	})
 	if err != nil {
 		return "", resp.StatusCode, fmt.Errorf("failed posting resource: %w", err)
 	}

@@ -2,24 +2,26 @@
 Provide a resource to manage an event webhook settings.
 Example Usage
 ```hcl
-resource "sendgrid_event_webhook" "default" {
-	enabled = true
-    url = "https://foo.bar/sendgrid/inbound"
-    group_resubscribe = true
-    delivered = true
-    group_unsubscribe = true
-    spam_report = true
-    bounce = true
-    deferred = true
-    unsubscribe = true
-    processed = true
-    open = true
-    click = true
-    dropped = true
-    oauth_client_id = "a-client-id"
-    oauth_client_secret = "a-client-secret"
-    oauth_token_url = "https://oauth.example.com/token"
-}
+
+	resource "sendgrid_event_webhook" "default" {
+		enabled = true
+	    url = "https://foo.bar/sendgrid/inbound"
+	    group_resubscribe = true
+	    delivered = true
+	    group_unsubscribe = true
+	    spam_report = true
+	    bounce = true
+	    deferred = true
+	    unsubscribe = true
+	    processed = true
+	    open = true
+	    click = true
+	    dropped = true
+	    oauth_client_id = "a-client-id"
+	    oauth_client_secret = "a-client-secret"
+	    oauth_token_url = "https://oauth.example.com/token"
+	}
+
 ```
 */
 package sendgrid
@@ -187,6 +189,7 @@ func resourceSendgridEventWebhookPatch(ctx context.Context, d *schema.ResourceDa
 
 	_, err := sendgrid.RetryOnRateLimit(ctx, d, func() (interface{}, sendgrid.RequestError) {
 		return c.PatchEventWebhook(
+			ctx,
 			enabled,
 			url,
 			groupResubscribe,
@@ -210,7 +213,7 @@ func resourceSendgridEventWebhookPatch(ctx context.Context, d *schema.ResourceDa
 	}
 
 	if d.HasChange("signed") {
-		if _, err := c.ConfigureEventWebhookSigning(d.Get("signed").(bool)); err.Err != nil {
+		if _, err := c.ConfigureEventWebhookSigning(ctx, d.Get("signed").(bool)); err.Err != nil {
 			return diag.FromErr(err.Err)
 		}
 	}
@@ -224,10 +227,10 @@ func resourceSendgridEventWebhookPatch(ctx context.Context, d *schema.ResourceDa
 	return resourceSendgridEventWebhookRead(ctx, d, m)
 }
 
-func resourceSendgridEventWebhookRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceSendgridEventWebhookRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(*sendgrid.Client)
 
-	webhook, err := c.ReadEventWebhook()
+	webhook, err := c.ReadEventWebhook(ctx)
 	if err.Err != nil {
 		return diag.FromErr(err.Err)
 	}
@@ -263,7 +266,7 @@ func resourceSendgridEventWebhookRead(_ context.Context, d *schema.ResourceData,
 	//nolint:errcheck
 	d.Set("oauth_token_url", webhook.OAuthTokenURL)
 
-	webhookSigning, err := c.ReadEventWebhookSigning()
+	webhookSigning, err := c.ReadEventWebhookSigning(ctx)
 	if err.Err != nil {
 		return diag.FromErr(err.Err)
 	}
