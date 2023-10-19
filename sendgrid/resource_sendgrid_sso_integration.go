@@ -5,14 +5,16 @@ Provide a resource to manage SSO integrations.
 workflow once after supplying all required fields including an SSO certificate via `aws_sso_certificate`.
 Example Usage
 ```hcl
-resource "sendgrid_sso_integration" "sso" {
-	name    = "IdP"
-	enabled = false
 
-	signin_url  = "https://idp.com/signin"
-	signout_url = "https://idp.com/signout"
-	entity_id   = "https://idp.com/12345"
-}
+	resource "sendgrid_sso_integration" "sso" {
+		name    = "IdP"
+		enabled = false
+
+		signin_url  = "https://idp.com/signin"
+		signout_url = "https://idp.com/signout"
+		entity_id   = "https://idp.com/12345"
+	}
+
 ```
 Import
 A SSO integration can be imported, e.g.
@@ -101,7 +103,7 @@ func resourceSendgridSSOIntegrationCreate(ctx context.Context, d *schema.Resourc
 	entityID := d.Get("entity_id").(string)
 
 	apiKeyStruct, err := sendgrid.RetryOnRateLimit(ctx, d, func() (interface{}, sendgrid.RequestError) {
-		return c.CreateSSOIntegration(name, enabled, signInURL, signOutURL, entityID)
+		return c.CreateSSOIntegration(ctx, name, enabled, signInURL, signOutURL, entityID)
 	})
 	if err != nil {
 		return diag.FromErr(err)
@@ -114,10 +116,10 @@ func resourceSendgridSSOIntegrationCreate(ctx context.Context, d *schema.Resourc
 	return resourceSendgridSSOIntegrationRead(ctx, d, m)
 }
 
-func resourceSendgridSSOIntegrationRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceSendgridSSOIntegrationRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(*sendgrid.Client)
 
-	integration, requestErr := c.ReadSSOIntegration(d.Id())
+	integration, requestErr := c.ReadSSOIntegration(d.Id(), ctx)
 
 	if requestErr.Err != nil {
 		return diag.FromErr(requestErr.Err)
@@ -154,7 +156,7 @@ func resourceSendgridSSOIntegrationUpdate(ctx context.Context, d *schema.Resourc
 	entityID := d.Get("entity_id").(string)
 
 	_, err := sendgrid.RetryOnRateLimit(ctx, d, func() (interface{}, sendgrid.RequestError) {
-		return c.UpdateSSOIntegration(id, name, enabled, signInURL, signOutURL, entityID)
+		return c.UpdateSSOIntegration(ctx, id, name, enabled, signInURL, signOutURL, entityID)
 	})
 	if err != nil {
 		return diag.FromErr(err)
@@ -167,7 +169,7 @@ func resourceSendgridSSOIntegrationDelete(ctx context.Context, d *schema.Resourc
 	c := m.(*sendgrid.Client)
 
 	_, err := sendgrid.RetryOnRateLimit(ctx, d, func() (interface{}, sendgrid.RequestError) {
-		return c.DeleteSSOIntegration(d.Id())
+		return c.DeleteSSOIntegration(ctx, d.Id())
 	})
 	if err != nil {
 		return diag.FromErr(err)

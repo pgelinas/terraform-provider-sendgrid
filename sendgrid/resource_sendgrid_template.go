@@ -2,10 +2,12 @@
 Provide a resource to manage a template of email.
 Example Usage
 ```hcl
-resource "sendgrid_template" "template" {
-	name       = "my-template"
-	generation = "dynamic"
-}
+
+	resource "sendgrid_template" "template" {
+		name       = "my-template"
+		generation = "dynamic"
+	}
+
 ```
 Import
 A template can be imported, e.g.
@@ -58,13 +60,13 @@ func resourceSendgridTemplate() *schema.Resource {
 	}
 }
 
-func resourceSendgridTemplateCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceSendgridTemplateCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(*sendgrid.Client)
 
 	name := d.Get("name").(string)
 	generation := d.Get("generation").(string)
 
-	template, err := c.CreateTemplate(name, generation)
+	template, err := c.CreateTemplate(ctx, name, generation)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -75,10 +77,10 @@ func resourceSendgridTemplateCreate(_ context.Context, d *schema.ResourceData, m
 	return nil
 }
 
-func resourceSendgridTemplateRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceSendgridTemplateRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(*sendgrid.Client)
 
-	template, err := c.ReadTemplate(d.Id())
+	template, err := c.ReadTemplate(ctx, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -108,7 +110,7 @@ func resourceSendgridTemplateUpdate(ctx context.Context, d *schema.ResourceData,
 	c := m.(*sendgrid.Client)
 
 	if d.HasChange("name") {
-		_, err := c.UpdateTemplate(d.Id(), d.Get("name").(string))
+		_, err := c.UpdateTemplate(ctx, d.Id(), d.Get("name").(string))
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -117,10 +119,10 @@ func resourceSendgridTemplateUpdate(ctx context.Context, d *schema.ResourceData,
 	return resourceSendgridTemplateRead(ctx, d, m)
 }
 
-func resourceSendgridTemplateDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceSendgridTemplateDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(*sendgrid.Client)
 
-	if _, err := c.DeleteTemplate(d.Id()); err != nil {
+	if _, err := c.DeleteTemplate(ctx, d.Id()); err != nil {
 		return diag.FromErr(err)
 	}
 	return nil

@@ -2,13 +2,15 @@
 Provide a resource to manage an API key.
 Example Usage
 ```hcl
-resource "sendgrid_api_key" "api_key" {
-	name   = "my-api-key"
-	scopes = [
-		"mail.send",
-		"sender_verification_eligible",
-	]
-}
+
+	resource "sendgrid_api_key" "api_key" {
+		name   = "my-api-key"
+		scopes = [
+			"mail.send",
+			"sender_verification_eligible",
+		]
+	}
+
 ```
 Import
 An API key can be imported, e.g.
@@ -90,7 +92,7 @@ func resourceSendgridAPIKeyCreate(ctx context.Context, d *schema.ResourceData, m
 
 	log.Printf("[DEBUG] creating API Key: %s", req.Name)
 	apiKeyStruct, err := sendgrid.RetryOnRateLimit(ctx, d, func() (interface{}, sendgrid.RequestError) {
-		return c.CreateAPIKey(req)
+		return c.CreateAPIKey(ctx, req)
 	})
 	if err != nil {
 		return diag.FromErr(err)
@@ -104,10 +106,10 @@ func resourceSendgridAPIKeyCreate(ctx context.Context, d *schema.ResourceData, m
 	return resourceSendgridAPIKeyRead(ctx, d, m)
 }
 
-func resourceSendgridAPIKeyRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceSendgridAPIKeyRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(*sendgrid.Client)
 
-	apiKey, err := c.ReadAPIKey(d.Id())
+	apiKey, err := c.ReadAPIKey(ctx, d.Id())
 	if err.Err != nil {
 		return diag.FromErr(err.Err)
 	}
@@ -140,7 +142,7 @@ func resourceSendgridAPIKeyUpdate(ctx context.Context, d *schema.ResourceData, m
 
 	log.Printf("[DEBUG] updating API Key: %s", req.Name)
 	_, err := sendgrid.RetryOnRateLimit(ctx, d, func() (interface{}, sendgrid.RequestError) {
-		return c.UpdateAPIKey(d.Id(), req)
+		return c.UpdateAPIKey(ctx, d.Id(), req)
 	})
 	if err != nil {
 		return diag.FromErr(err)
@@ -153,7 +155,7 @@ func resourceSendgridAPIKeyUpdate(ctx context.Context, d *schema.ResourceData, m
 func resourceSendgridAPIKeyDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(*sendgrid.Client)
 
-	if _, err := c.DeleteAPIKey(d.Id()); err != nil {
+	if _, err := c.DeleteAPIKey(ctx, d.Id()); err != nil {
 		return diag.FromErr(err)
 	}
 

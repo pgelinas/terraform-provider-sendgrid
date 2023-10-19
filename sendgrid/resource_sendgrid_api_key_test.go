@@ -1,6 +1,7 @@
 package sendgrid_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -98,7 +99,7 @@ func testAccCheckSendgridAPIKeyDestroy(s *terraform.State) error {
 
 		apiKeyID := rs.Primary.ID
 
-		if _, err := c.DeleteAPIKey(apiKeyID); err != nil {
+		if _, err := c.DeleteAPIKey(context.Background(), apiKeyID); err != nil {
 			return err.Err
 		}
 	}

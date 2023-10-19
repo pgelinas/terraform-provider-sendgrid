@@ -2,18 +2,20 @@
 Provide a resource to manage SSO certificates.
 Example Usage
 ```hcl
-resource "sendgrid_sso_integration" "sso" {
-	name    = "IdP"
-	enabled = true
 
-	signin_url  = "https://idp.com/signin"
-	signout_url = "https://idp.com/signout"
-	entity_id   = "https://idp.com/12345"
-}
+	resource "sendgrid_sso_integration" "sso" {
+		name    = "IdP"
+		enabled = true
 
-resource "sendgrid_sso_certificate" "cert" {
-	integration_id = sendgrid_sso_integration.sso.id
-	public_certificate = <<EOF
+		signin_url  = "https://idp.com/signin"
+		signout_url = "https://idp.com/signout"
+		entity_id   = "https://idp.com/12345"
+	}
+
+	resource "sendgrid_sso_certificate" "cert" {
+		integration_id = sendgrid_sso_integration.sso.id
+		public_certificate = <<EOF
+
 -----BEGIN CERTIFICATE-----
 ...
 EOF
@@ -68,7 +70,7 @@ func resourceSendgridSSOCertificateCreate(ctx context.Context, d *schema.Resourc
 	integrationID := d.Get("integration_id").(string)
 
 	apiKeyStruct, err := sendgrid.RetryOnRateLimit(ctx, d, func() (interface{}, sendgrid.RequestError) {
-		return c.CreateSSOCertificate(publicCertificate, integrationID)
+		return c.CreateSSOCertificate(ctx, publicCertificate, integrationID)
 	})
 	if err != nil {
 		return diag.FromErr(err)
@@ -81,10 +83,10 @@ func resourceSendgridSSOCertificateCreate(ctx context.Context, d *schema.Resourc
 	return resourceSendgridSSOCertificateRead(ctx, d, m)
 }
 
-func resourceSendgridSSOCertificateRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceSendgridSSOCertificateRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(*sendgrid.Client)
 
-	certificate, requestErr := c.ReadSSOCertificate(d.Id())
+	certificate, requestErr := c.ReadSSOCertificate(ctx, d.Id())
 
 	if requestErr.Err != nil {
 		return diag.FromErr(requestErr.Err)
@@ -106,7 +108,7 @@ func resourceSendgridSSOCertificateUpdate(ctx context.Context, d *schema.Resourc
 	integrationID := d.Get("integration_id").(string)
 
 	_, err := sendgrid.RetryOnRateLimit(ctx, d, func() (interface{}, sendgrid.RequestError) {
-		return c.UpdateSSOCertificate(id, publicCertificate, integrationID)
+		return c.UpdateSSOCertificate(ctx, id, publicCertificate, integrationID)
 	})
 	if err != nil {
 		return diag.FromErr(err)
@@ -119,7 +121,7 @@ func resourceSendgridSSOCertificateDelete(ctx context.Context, d *schema.Resourc
 	c := m.(*sendgrid.Client)
 
 	_, err := sendgrid.RetryOnRateLimit(ctx, d, func() (interface{}, sendgrid.RequestError) {
-		return c.DeleteSSOCertificate(fmt.Sprint(d.Id()))
+		return c.DeleteSSOCertificate(ctx, fmt.Sprint(d.Id()))
 	})
 	if err != nil {
 		return diag.FromErr(err)

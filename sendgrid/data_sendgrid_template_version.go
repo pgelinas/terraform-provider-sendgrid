@@ -31,7 +31,7 @@ func dataSendgridTemplateVersionRead(_ context.Context, d *schema.ResourceData, 
 	templateID := d.Get("template_id").(string)
 	c := m.(*sendgrid.Client)
 
-	template, err := c.ReadTemplate(templateID)
+	template, err := c.ReadTemplate(ctx, templateID)
 	if err != nil {
 		return diag.FromErr(err)
 	}

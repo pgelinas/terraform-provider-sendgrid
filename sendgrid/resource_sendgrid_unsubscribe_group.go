@@ -2,11 +2,13 @@
 Provide a resource to manage an unsubscribe group.
 Example Usage
 ```hcl
-resource "sendgrid_unsubscribe_group" "default" {
-	name   = "default-unsubscribe-group"
-	description = "The default unsubscribe group"
-    is_default = true
-}
+
+	resource "sendgrid_unsubscribe_group" "default" {
+		name   = "default-unsubscribe-group"
+		description = "The default unsubscribe group"
+	    is_default = true
+	}
+
 ```
 Import
 An unsubscribe group can be imported, e.g.
@@ -74,7 +76,7 @@ func resourceSendgridUnsubscribeGroupCreate(
 	isDefault := d.Get("is_default").(bool)
 
 	apiKeyStruct, err := sendgrid.RetryOnRateLimit(ctx, d, func() (interface{}, sendgrid.RequestError) {
-		return c.CreateUnsubscribeGroup(name, description, isDefault)
+		return c.CreateUnsubscribeGroup(ctx, name, description, isDefault)
 	})
 
 	group := apiKeyStruct.(*sendgrid.UnsubscribeGroup)
@@ -88,10 +90,10 @@ func resourceSendgridUnsubscribeGroupCreate(
 	return resourceSendgridUnsubscribeGroupRead(ctx, d, m)
 }
 
-func resourceSendgridUnsubscribeGroupRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceSendgridUnsubscribeGroupRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(*sendgrid.Client)
 
-	group, err := c.ReadUnsubscribeGroup(d.Id())
+	group, err := c.ReadUnsubscribeGroup(ctx, d.Id())
 	if err.Err != nil {
 		return diag.FromErr(err.Err)
 	}
@@ -134,7 +136,7 @@ func resourceSendgridUnsubscribeGroupUpdate(
 	isDefault := d.Get("is_default").(bool)
 
 	_, err := sendgrid.RetryOnRateLimit(ctx, d, func() (interface{}, sendgrid.RequestError) {
-		return c.UpdateUnsubscribeGroup(d.Id(), name, description, isDefault)
+		return c.UpdateUnsubscribeGroup(ctx, d.Id(), name, description, isDefault)
 	})
 	if err != nil {
 		return diag.FromErr(err)
@@ -150,7 +152,7 @@ func resourceSendgridUnsubscribeGroupDelete(
 	c := m.(*sendgrid.Client)
 
 	_, err := sendgrid.RetryOnRateLimit(ctx, d, func() (interface{}, sendgrid.RequestError) {
-		return c.DeleteUnsubscribeGroup(d.Id())
+		return c.DeleteUnsubscribeGroup(ctx, d.Id())
 	})
 	if err != nil {
 		return diag.FromErr(err)

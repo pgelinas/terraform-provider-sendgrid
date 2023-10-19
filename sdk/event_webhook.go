@@ -1,6 +1,7 @@
 package sendgrid
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -57,6 +58,7 @@ func parseEventWebhookSigning(respBody string) (*EventWebhookSigning, RequestErr
 
 // CreateEventWebhook creates an EventWebhook and returns it.
 func (c *Client) PatchEventWebhook(
+	ctx context.Context,
 	enabled bool,
 	url string,
 	groupResubscribe bool,
@@ -72,7 +74,8 @@ func (c *Client) PatchEventWebhook(
 	dropped bool,
 	oauthClientID string,
 	oauthClientSecret string,
-	oauthTokenURL string) (*EventWebhook, RequestError) {
+	oauthTokenURL string,
+) (*EventWebhook, RequestError) {
 	if url == "" {
 		return nil, RequestError{
 			StatusCode: http.StatusInternalServerError,
@@ -80,7 +83,7 @@ func (c *Client) PatchEventWebhook(
 		}
 	}
 
-	respBody, statusCode, err := c.Post("PATCH", "/user/webhooks/event/settings", EventWebhook{
+	respBody, statusCode, err := c.Post(ctx, "PATCH", "/user/webhooks/event/settings", EventWebhook{
 		Enabled:           enabled,
 		URL:               url,
 		GroupResubscribe:  groupResubscribe,
@@ -116,8 +119,8 @@ func (c *Client) PatchEventWebhook(
 }
 
 // ReadEventWebhook retrieves an EventWebhook and returns it.
-func (c *Client) ReadEventWebhook() (*EventWebhook, RequestError) {
-	respBody, _, err := c.Get("GET", "/user/webhooks/event/settings")
+func (c *Client) ReadEventWebhook(ctx context.Context) (*EventWebhook, RequestError) {
+	respBody, _, err := c.Get(ctx, "GET", "/user/webhooks/event/settings")
 	if err != nil {
 		return nil, RequestError{
 			StatusCode: http.StatusInternalServerError,
@@ -128,8 +131,8 @@ func (c *Client) ReadEventWebhook() (*EventWebhook, RequestError) {
 	return parseEventWebhook(respBody)
 }
 
-func (c *Client) ConfigureEventWebhookSigning(enabled bool) (*EventWebhookSigning, RequestError) {
-	respBody, statusCode, err := c.Post("PATCH", "/user/webhooks/event/settings/signed", EventWebhookSigning{
+func (c *Client) ConfigureEventWebhookSigning(ctx context.Context, enabled bool) (*EventWebhookSigning, RequestError) {
+	respBody, statusCode, err := c.Post(ctx, "PATCH", "/user/webhooks/event/settings/signed", EventWebhookSigning{
 		Enabled: enabled,
 	})
 	if err != nil {
@@ -149,8 +152,8 @@ func (c *Client) ConfigureEventWebhookSigning(enabled bool) (*EventWebhookSignin
 	return parseEventWebhookSigning(respBody)
 }
 
-func (c *Client) ReadEventWebhookSigning() (*EventWebhookSigning, RequestError) {
-	respBody, _, err := c.Get("GET", "/user/webhooks/event/settings/signed")
+func (c *Client) ReadEventWebhookSigning(ctx context.Context) (*EventWebhookSigning, RequestError) {
+	respBody, _, err := c.Get(ctx, "GET", "/user/webhooks/event/settings/signed")
 	if err != nil {
 		return nil, RequestError{
 			StatusCode: http.StatusInternalServerError,
